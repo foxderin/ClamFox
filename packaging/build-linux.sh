@@ -194,28 +194,26 @@ shopt -u nullglob
 
 ###############################################################################
 # AppImage
+#
+# IMPORTANT: We deliberately ship the Flutter bundle under usr/share/clamfox/
+# instead of usr/lib/clamfox/. linuxdeploy walks usr/lib/ to patch RPATHs on
+# every ELF; the Flutter bundle keeps non-ELF data files (data/icudtl.dat,
+# data/flutter_assets/*) co-located with its binaries, which makes
+# linuxdeploy crash with "Invalid magic bytes in file header". Keeping the
+# bundle in usr/share/ avoids that walk entirely. A custom AppRun launches
+# the Flutter binary from its new location.
 ###############################################################################
 echo "==> Building AppImage"
 APPDIR="${DIST}/AppDir"
-mkdir -p "${APPDIR}/usr/bin" \
-         "${APPDIR}/usr/lib/clamfox" \
+mkdir -p "${APPDIR}/usr/share/clamfox" \
          "${APPDIR}/usr/share/applications" \
          "${APPDIR}/usr/share/icons/hicolor/512x512/apps" \
          "${APPDIR}/usr/share/polkit-1/actions"
 
-cp -a "${STAGE}/bundle/." "${APPDIR}/usr/lib/clamfox/"
-install -m 0755 "${STAGE}/clamfox-helper" "${APPDIR}/usr/lib/clamfox/clamfox-helper"
+cp -a "${STAGE}/bundle/." "${APPDIR}/usr/share/clamfox/"
+install -m 0755 "${STAGE}/clamfox-helper" "${APPDIR}/usr/share/clamfox/clamfox-helper"
 install -m 0644 "${STAGE}/com.glassfoxowo.clamfox.policy" \
         "${APPDIR}/usr/share/polkit-1/actions/com.glassfoxowo.clamfox.policy"
-
-# AppImage entrypoint visible on PATH inside the image.
-cat > "${APPDIR}/usr/bin/clamfox" <<'EOF'
-#!/usr/bin/env bash
-HERE="$(dirname "$(readlink -f "$0")")"
-exec "$HERE/../lib/clamfox/clamfox" "$@"
-EOF
-chmod +x "${APPDIR}/usr/bin/clamfox"
-
 install -m 0644 "${STAGE}/clamfox.desktop" "${APPDIR}/usr/share/applications/clamfox.desktop"
 install -m 0644 "${STAGE}/clamfox.png"     "${APPDIR}/usr/share/icons/hicolor/512x512/apps/clamfox.png"
 # linuxdeploy expects the desktop file and icon at the AppDir root too.
@@ -248,9 +246,11 @@ export APPIMAGE_EXTRACT_AND_RUN=1
   OUTPUT="clamfox-${VERSION}-x86_64.AppImage" \
   VERSION="${VERSION}" \
   "${LINUXDEPLOY}" --appdir AppDir \
-                   --executable AppDir/usr/lib/clamfox/clamfox \
+                   --custom-apprun "${PKG}/AppRun" \
                    --desktop-file AppDir/clamfox.desktop \
                    --icon-file AppDir/clamfox.png \
+                   --library AppDir/usr/share/clamfox/lib/libflutter_linux_gtk.so \
+                   --library AppDir/usr/share/clamfox/lib/libapp.so \
                    --plugin gtk \
                    --output appimage
 )

@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# Custom AppRun for the ClamFox AppImage.
+#
+# linuxdeploy normally generates an AppRun that walks AppDir/usr/lib for ELFs
+# and patches their RPATH. The Flutter bundle keeps non-ELF data (icudtl.dat,
+# flutter_assets/*) co-located with its binaries, so we ship it under
+# usr/share/clamfox/ instead and launch the binary from this script.
+
+set -e
+
+HERE="$(dirname "$(readlink -f "${0}")")"
+
+# Pick up linuxdeploy-plugin-gtk's environment setup (GDK_BACKEND,
+# GTK_DATA_PREFIX, GIO_MODULE_DIR, gdk-pixbuf loader paths, etc.).
+if [ -d "${HERE}/apprun-hooks" ]; then
+    for hook in "${HERE}/apprun-hooks/"*.sh; do
+        if [ -r "${hook}" ]; then
+            # shellcheck disable=SC1090
+            . "${hook}"
+        fi
+    done
+fi
+
+# Flutter looks for data/ and lib/ next to the binary. Ensure its bundled
+# libs (libapp.so, libflutter_linux_gtk.so) and the GTK libs deployed by
+# linuxdeploy under usr/lib are both reachable.
+export LD_LIBRARY_PATH="${HERE}/usr/share/clamfox/lib:${HERE}/usr/lib:${LD_LIBRARY_PATH:-}"
+
+exec "${HERE}/usr/share/clamfox/clamfox" "$@"
