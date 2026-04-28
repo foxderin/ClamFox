@@ -19,7 +19,8 @@ void main() {
 
     test('parses single FOUND line', () {
       final r = ClamScanOutputParser.parse(
-          '/home/user/eicar.com: Eicar-Test-Signature FOUND');
+        '/home/user/eicar.com: Eicar-Test-Signature FOUND',
+      );
       expect(r.threats, hasLength(1));
       expect(r.threats.first.filePath, '/home/user/eicar.com');
       expect(r.threats.first.threatName, 'Eicar-Test-Signature');
@@ -27,7 +28,8 @@ void main() {
 
     test('strips "FOUND" trailing token from threat name', () {
       final r = ClamScanOutputParser.parse(
-          '/tmp/x.txt: Win.Trojan.Foo-1 FOUND');
+        '/tmp/x.txt: Win.Trojan.Foo-1 FOUND',
+      );
       expect(r.threats.first.threatName, 'Win.Trojan.Foo-1');
       expect(r.threats.first.threatName, isNot(contains('FOUND')));
     });
@@ -40,16 +42,15 @@ void main() {
       ].join('\n');
       final r = ClamScanOutputParser.parse(input);
       expect(r.threats, hasLength(3));
-      expect(r.threats.map((t) => t.threatName).toList(),
-          ['Sig.A', 'Sig.B', 'Sig.C']);
+      expect(r.threats.map((t) => t.threatName).toList(), [
+        'Sig.A',
+        'Sig.B',
+        'Sig.C',
+      ]);
     });
 
     test('counts per-file OK lines', () {
-      final input = [
-        '/a/x.txt: OK',
-        '/a/y.txt: OK',
-        '/a/z.txt: OK',
-      ].join('\n');
+      final input = ['/a/x.txt: OK', '/a/y.txt: OK', '/a/z.txt: OK'].join('\n');
       final r = ClamScanOutputParser.parse(input);
       expect(r.fileScannedIncrement, 3);
       expect(r.threats, isEmpty);

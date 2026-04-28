@@ -27,10 +27,7 @@ class EngineCommands {
   /// ship rkhunter/chkrootkit as 0700 root:root, so a non-root probe of the
   /// binary fails with EACCES even when installed).
   static const Map<String, List<String>> binaryPaths = {
-    'clamav': [
-      '/usr/bin/clamscan',
-      '/usr/local/bin/clamscan',
-    ],
+    'clamav': ['/usr/bin/clamscan', '/usr/local/bin/clamscan'],
     'rkhunter': [
       '/usr/bin/rkhunter',
       '/usr/sbin/rkhunter',

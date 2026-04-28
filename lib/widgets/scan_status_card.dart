@@ -58,16 +58,15 @@ class ScanStatusCard extends StatelessWidget {
                 child: LinearProgressIndicator(
                   value: av.scanProgress,
                   minHeight: 6,
-                  backgroundColor:
-                      cs.onTertiaryContainer.withValues(alpha: 0.15),
+                  backgroundColor: cs.onTertiaryContainer.withValues(
+                    alpha: 0.15,
+                  ),
                   color: cs.onTertiaryContainer,
                 ),
               ),
               const SizedBox(height: 10),
               Text(
-                loadingDb
-                    ? '首次启动通常需要 20–60 秒'
-                    : av.currentScanPath,
+                loadingDb ? '首次启动通常需要 20–60 秒' : av.currentScanPath,
                 style: tt.bodySmall?.copyWith(
                   color: cs.onTertiaryContainer.withValues(alpha: 0.85),
                 ),

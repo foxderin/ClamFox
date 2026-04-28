@@ -38,11 +38,7 @@ class EngineAvailability {
   final bool installed;
   final String? version;
   final String? hint; // why missing / install command suggestion
-  const EngineAvailability({
-    required this.installed,
-    this.version,
-    this.hint,
-  });
+  const EngineAvailability({required this.installed, this.version, this.hint});
 
   static const missing = EngineAvailability(installed: false);
 }
@@ -64,10 +60,7 @@ class ScanFileProgress extends ScanEvent {
 
   /// Number of newly scanned files since the last event (per-file lines).
   final int incrementalScanned;
-  const ScanFileProgress({
-    this.totalScanned,
-    this.incrementalScanned = 0,
-  });
+  const ScanFileProgress({this.totalScanned, this.incrementalScanned = 0});
 }
 
 class ScanThreatFound extends ScanEvent {

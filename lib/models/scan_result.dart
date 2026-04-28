@@ -61,9 +61,9 @@ class ScanResult {
   }
 
   String get actionText => switch (action) {
-        ScanAction.detected => '检测到',
-        ScanAction.removed => '已删除',
-        ScanAction.quarantined => '已隔离',
-        ScanAction.skipped => '已跳过',
-      };
+    ScanAction.detected => '检测到',
+    ScanAction.removed => '已删除',
+    ScanAction.quarantined => '已隔离',
+    ScanAction.skipped => '已跳过',
+  };
 }

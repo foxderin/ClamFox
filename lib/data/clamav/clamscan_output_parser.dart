@@ -19,8 +19,11 @@ class ClamScanOutputParser {
         final parts = line.split(':');
         if (parts.length >= 2) {
           final filePath = parts[0].trim();
-          final threat =
-              parts.sublist(1).join(':').replaceAll('FOUND', '').trim();
+          final threat = parts
+              .sublist(1)
+              .join(':')
+              .replaceAll('FOUND', '')
+              .trim();
           if (filePath.isNotEmpty && threat.isNotEmpty) {
             threats.add(DetectedThreat(filePath: filePath, threatName: threat));
           }

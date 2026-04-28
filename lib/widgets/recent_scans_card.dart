@@ -31,8 +31,9 @@ class RecentScansCard extends StatelessWidget {
                   const SizedBox(width: 10),
                   Text(
                     '最近威胁',
-                    style:
-                        tt.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                    style: tt.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   const Spacer(),
                   TextButton(
@@ -128,15 +129,15 @@ class _MiniEngineChip extends StatelessWidget {
     final (label, fg, bg) = switch (engine) {
       'clamav' => ('ClamAV', cs.onPrimaryContainer, cs.primaryContainer),
       'rkhunter' => (
-          'rkhunter',
-          cs.onSecondaryContainer,
-          cs.secondaryContainer,
-        ),
+        'rkhunter',
+        cs.onSecondaryContainer,
+        cs.secondaryContainer,
+      ),
       'chkrootkit' => (
-          'chkrootkit',
-          cs.onTertiaryContainer,
-          cs.tertiaryContainer,
-        ),
+        'chkrootkit',
+        cs.onTertiaryContainer,
+        cs.tertiaryContainer,
+      ),
       _ => (engine, cs.onSurfaceVariant, cs.surfaceContainerHighest),
     };
     return Container(
