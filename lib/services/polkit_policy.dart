@@ -24,7 +24,7 @@ String buildClamfoxPolkitPolicy() {
  "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
 <policyconfig>
   <vendor>GlassFoxOwo</vendor>
-  <vendor_url>https://github.com/glassfoxowo/clamfox</vendor_url>
+  <vendor_url>https://github.com/foxderin/ClamFox</vendor_url>
 
   <action id="$kClamfoxAdminActionId">
     <description>Run ClamFox administrative tasks</description>

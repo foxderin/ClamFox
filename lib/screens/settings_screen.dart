@@ -655,12 +655,12 @@ class _AboutSection extends StatelessWidget {
           const _LinkTile(
             icon: Icons.code,
             title: '源代码',
-            url: 'https://github.com/glassfoxowo/clamfox',
+            url: 'https://github.com/foxderin/ClamFox',
           ),
           const _LinkTile(
             icon: Icons.bug_report_outlined,
             title: '反馈问题',
-            url: 'https://github.com/glassfoxowo/clamfox/issues',
+            url: 'https://github.com/foxderin/ClamFox/issues',
           ),
           const _LinkTile(
             icon: Icons.public,
