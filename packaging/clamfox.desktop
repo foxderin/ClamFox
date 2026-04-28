@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Application
+Name=ClamFox
+GenericName=Antivirus Scanner
+GenericName[zh_CN]=病毒扫描工具
+Comment=Modern ClamAV GUI for Linux
+Comment[zh_CN]=面向 Linux 桌面的 ClamAV 图形界面
+Exec=clamfox %F
+Icon=clamfox
+Terminal=false
+Categories=System;Security;Utility;
+Keywords=antivirus;clamav;security;scanner;rkhunter;chkrootkit;malware;
+StartupWMClass=clamfox
+StartupNotify=true

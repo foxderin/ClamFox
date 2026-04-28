@@ -1,0 +1,80 @@
+Name:           clamfox
+Version:        @VERSION@
+Release:        1%{?dist}
+Summary:        Modern ClamAV GUI for Linux
+
+License:        MIT
+URL:            https://github.com/foxderin/ClamFox
+Source0:        clamfox-%{version}-linux-x64.tar.gz
+
+Requires:       gtk3
+Requires:       polkit
+Recommends:     clamav
+Recommends:     rkhunter
+Recommends:     chkrootkit
+ExclusiveArch:  x86_64
+
+# The Flutter bundle ships its own libapp.so / libflutter_linux_gtk.so under
+# /usr/lib/clamfox/lib. We do not want rpmbuild's auto-requires to look at
+# those embedded libraries.
+AutoReqProv:    no
+
+%global debug_package %{nil}
+%global __strip /bin/true
+
+%description
+ClamFox is a Flutter-based desktop graphical interface for the ClamAV
+antivirus engine, with optional rkhunter and chkrootkit integration. It
+provides multi-engine scanning, threat handling, scan history, signature
+updates and a privileged-mode helper backed by polkit.
+
+%prep
+%setup -q -n clamfox-%{version}-linux-x64
+
+%build
+# Nothing to build — payload is a prebuilt Flutter bundle.
+
+%install
+mkdir -p %{buildroot}/usr/lib/clamfox
+mkdir -p %{buildroot}/usr/bin
+mkdir -p %{buildroot}/usr/share/applications
+mkdir -p %{buildroot}/usr/share/icons/hicolor/512x512/apps
+mkdir -p %{buildroot}/usr/share/polkit-1/actions
+
+cp -a bundle/. %{buildroot}/usr/lib/clamfox/
+install -m 0755 clamfox-helper %{buildroot}/usr/lib/clamfox/clamfox-helper
+install -m 0644 clamfox.desktop %{buildroot}/usr/share/applications/clamfox.desktop
+install -m 0644 clamfox.png %{buildroot}/usr/share/icons/hicolor/512x512/apps/clamfox.png
+install -m 0644 com.glassfoxowo.clamfox.policy \
+        %{buildroot}/usr/share/polkit-1/actions/com.glassfoxowo.clamfox.policy
+ln -sf /usr/lib/clamfox/clamfox %{buildroot}/usr/bin/clamfox
+
+%files
+%dir /usr/lib/clamfox
+/usr/lib/clamfox/*
+/usr/bin/clamfox
+/usr/share/applications/clamfox.desktop
+/usr/share/icons/hicolor/512x512/apps/clamfox.png
+/usr/share/polkit-1/actions/com.glassfoxowo.clamfox.policy
+
+%post
+if command -v gtk-update-icon-cache >/dev/null 2>&1; then
+    gtk-update-icon-cache -q /usr/share/icons/hicolor || :
+fi
+if command -v update-desktop-database >/dev/null 2>&1; then
+    update-desktop-database -q || :
+fi
+
+%postun
+if [ $1 -eq 0 ]; then
+    if command -v gtk-update-icon-cache >/dev/null 2>&1; then
+        gtk-update-icon-cache -q /usr/share/icons/hicolor || :
+    fi
+    if command -v update-desktop-database >/dev/null 2>&1; then
+        update-desktop-database -q || :
+    fi
+fi
+
+%changelog
+* @DATE@ ClamFox Contributors <noreply@github.com> - @VERSION@-1
+- See https://github.com/foxderin/ClamFox/releases/tag/v@VERSION@

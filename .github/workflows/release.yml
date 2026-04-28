@@ -1,0 +1,210 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to build (e.g. v1.0.0). The tag must already exist in the repo.'
+        required: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Build Linux release packages
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    steps:
+      - name: Resolve tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            REF="${{ github.event.inputs.tag }}"
+          else
+            REF="${GITHUB_REF_NAME}"
+          fi
+          TAG="${REF#refs/tags/}"
+          VERSION="${TAG#v}"
+          if ! [[ "${VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-].+)?$ ]]; then
+            echo "::error::Invalid version derived from tag: ${TAG} -> ${VERSION}"
+            exit 1
+          fi
+          echo "tag=${TAG}"         >> "${GITHUB_OUTPUT}"
+          echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
+          # Mark prereleases (e.g. 1.0.0-rc1, 1.0.0-beta.2) automatically.
+          if [[ "${VERSION}" == *-* ]]; then
+            echo "prerelease=true"  >> "${GITHUB_OUTPUT}"
+          else
+            echo "prerelease=false" >> "${GITHUB_OUTPUT}"
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ steps.tag.outputs.tag }}
+
+      - name: Install build & packaging dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            ninja-build cmake clang pkg-config file fakeroot \
+            libgtk-3-dev liblzma-dev libstdc++-12-dev \
+            dpkg-dev rpm \
+            desktop-file-utils libfuse2 \
+            ca-certificates curl xz-utils
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Flutter / Dart versions
+        run: |
+          flutter --version
+          dart --version
+
+      - name: Pub get
+        run: flutter pub get
+
+      - name: Build Linux app (release)
+        run: flutter build linux --release
+
+      - name: Build privileged-mode helper
+        run: |
+          rm -rf build/clamfox-helper-cli
+          dart build cli -o build/clamfox-helper-cli
+          test -x build/clamfox-helper-cli/bundle/bin/clamfox_helper
+
+      - name: Generate Polkit policy
+        run: |
+          mkdir -p dist
+          dart run tool/dump_polkit_policy.dart > dist/com.glassfoxowo.clamfox.policy
+          test -s dist/com.glassfoxowo.clamfox.policy
+
+      - name: Build all packages (tar.gz, deb, rpm, AppImage)
+        env:
+          APPIMAGE_EXTRACT_AND_RUN: '1'
+        run: bash packaging/build-linux.sh "${{ steps.tag.outputs.version }}"
+
+      - name: Inspect built artifacts
+        run: |
+          ls -lh dist/*.tar.gz dist/*.deb dist/*.rpm dist/*.AppImage
+          file dist/*.deb dist/*.rpm dist/*.AppImage
+
+      - name: Generate changelog
+        id: changelog
+        env:
+          REPO: ${{ github.repository }}
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          set -euo pipefail
+          PREV="$(git tag --sort=-v:refname --merged "${TAG}" \
+                  | grep -vxF "${TAG}" | head -n 1 || true)"
+
+          if [ -z "${PREV}" ]; then
+            RANGE="${TAG}"
+            COMPARE_LINE="(initial release)"
+          else
+            RANGE="${PREV}..${TAG}"
+            COMPARE_LINE="**Full changelog**: https://github.com/${REPO}/compare/${PREV}...${TAG}"
+          fi
+
+          NOTES=dist/release-notes.md
+          : > "${NOTES}"
+
+          render_section() {
+            local pattern="$1" title="$2"
+            local out
+            out="$(git log --no-merges --pretty=format:'%H%x09%h%x09%s' "${RANGE}" \
+                   | awk -F'\t' -v pat="${pattern}" -v repo="${REPO}" '
+                       tolower($3) ~ pat {
+                         msg = $3
+                         sub(/^[A-Za-z]+(\([^)]*\))?: */, "", msg)
+                         printf "- %s ([%s](https://github.com/%s/commit/%s))\n", msg, $2, repo, $1
+                       }')"
+            if [ -n "${out}" ]; then
+              printf '### %s\n\n%s\n\n' "${title}" "${out}" >> "${NOTES}"
+            fi
+          }
+
+          {
+            echo "## ClamFox ${TAG}"
+            echo
+          } >> "${NOTES}"
+
+          render_section '^feat(\(|:)'     '✨ Features'
+          render_section '^fix(\(|:)'      '🐛 Bug Fixes'
+          render_section '^perf(\(|:)'     '⚡ Performance'
+          render_section '^refactor(\(|:)' '♻️ Refactor'
+          render_section '^docs(\(|:)'     '📝 Documentation'
+          render_section '^test(\(|:)'     '✅ Tests'
+          render_section '^build(\(|:)'    '🛠 Build'
+          render_section '^ci(\(|:)'       '🤖 CI'
+          render_section '^chore(\(|:)'    '🧹 Chores'
+
+          OTHER="$(git log --no-merges --pretty=format:'%H%x09%h%x09%s' "${RANGE}" \
+                   | awk -F'\t' -v repo="${REPO}" '
+                       $3 !~ /^(feat|fix|perf|refactor|docs|test|build|ci|chore)(\(|:)/ {
+                         printf "- %s ([%s](https://github.com/%s/commit/%s))\n", $3, $2, repo, $1
+                       }')"
+          if [ -n "${OTHER}" ]; then
+            printf '### Other\n\n%s\n\n' "${OTHER}" >> "${NOTES}"
+          fi
+
+          {
+            echo '---'
+            echo
+            echo '### 📦 Downloads'
+            echo
+            echo '| File | Format | Use it on |'
+            echo '| ---- | ------ | --------- |'
+            echo "| \`clamfox-${{ steps.tag.outputs.version }}-linux-x64.tar.gz\` | tar.gz | Any Linux x86_64 distro (run \`./install.sh\`) |"
+            echo "| \`clamfox_${{ steps.tag.outputs.version }}_amd64.deb\`        | .deb   | Debian, Ubuntu, derivatives |"
+            echo "| \`clamfox-${{ steps.tag.outputs.version }}-1.x86_64.rpm\`     | .rpm   | Fedora, RHEL, openSUSE |"
+            echo "| \`clamfox-${{ steps.tag.outputs.version }}-x86_64.AppImage\`  | AppImage | Portable, no install |"
+            echo
+            echo "${COMPARE_LINE}"
+          } >> "${NOTES}"
+
+          echo '---- release notes ----'
+          cat "${NOTES}"
+
+      - name: Upload workflow artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: clamfox-${{ steps.tag.outputs.version }}-linux-x64
+          path: |
+            dist/*.tar.gz
+            dist/*.deb
+            dist/*.rpm
+            dist/*.AppImage
+            dist/release-notes.md
+            dist/com.glassfoxowo.clamfox.policy
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: ClamFox ${{ steps.tag.outputs.tag }}
+          body_path: dist/release-notes.md
+          draft: false
+          prerelease: ${{ steps.tag.outputs.prerelease }}
+          fail_on_unmatched_files: true
+          files: |
+            dist/clamfox-${{ steps.tag.outputs.version }}-linux-x64.tar.gz
+            dist/clamfox_${{ steps.tag.outputs.version }}_amd64.deb
+            dist/clamfox-${{ steps.tag.outputs.version }}-1.x86_64.rpm
+            dist/clamfox-${{ steps.tag.outputs.version }}-x86_64.AppImage
