@@ -3,13 +3,14 @@ import 'dart:io';
 
 import '../../models/scan_result.dart';
 import '../../services/polkit_service.dart';
+import 'chkrootkit_output_parser.dart';
 import 'scan_engine.dart';
 
 /// chkrootkit — local rootkit / suspicious-binary scanner.
 ///
-/// We invoke `chkrootkit -q` (quiet); only positive findings are printed,
-/// formatted as `Checking `name'... INFECTED` or similar. Any non-empty
-/// stdout line in quiet mode is treated as a finding.
+/// We invoke `chkrootkit -q` (quiet). Some diagnostic / coverage lines are
+/// still printed in quiet mode, so raw output is preserved as logs while only
+/// parsed positive findings become scan results.
 class ChkrootkitEngine implements ScanEngine {
   final PolkitService _polkit;
 
@@ -80,18 +81,17 @@ class ChkrootkitEngine implements ScanEngine {
               final line = raw.trim();
               if (line.isEmpty) continue;
               controller.add(ScanLog(line));
-              // Quiet mode only emits suspicious / infected lines.
-              // Examples:
-              //   "INFECTED (PORTS:  465)"
-              //   "Possible Linux/Ebury - Operation Windigo installed"
+              final finding = ChkrootkitOutputParser.parseLine(line);
+              if (finding == null) continue;
               controller.add(
                 ScanThreatFound(
                   ScanResult(
-                    filePath: '(系统级检查)',
-                    threatName: line,
+                    filePath: finding.filePath,
+                    threatName: finding.threatName,
                     timestamp: DateTime.now(),
                     action: ScanAction.detected,
                     engine: id,
+                    details: finding.details,
                   ),
                 ),
               );

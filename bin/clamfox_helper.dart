@@ -17,6 +17,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:clamfox/data/clamav/clamscan_output_parser.dart';
+import 'package:clamfox/data/engines/chkrootkit_output_parser.dart';
 import 'package:clamfox/data/engines/engine_commands.dart';
 import 'package:clamfox/data/engines/rkhunter_output_parser.dart';
 import 'package:clamfox/models/scan_settings.dart';
@@ -522,7 +523,14 @@ class _RunningJob {
           final line = raw.trim();
           if (line.isEmpty) continue;
           emit(id, 'log', {'message': line});
-          emit(id, 'threat', {'filePath': '(系统级检查)', 'threatName': line});
+          final finding = ChkrootkitOutputParser.parseLine(line);
+          if (finding != null) {
+            emit(id, 'threat', {
+              'filePath': finding.filePath,
+              'threatName': finding.threatName,
+              if (finding.details != null) 'details': finding.details,
+            });
+          }
         }
         emit(id, 'progress', {'incrementalScanned': 1});
       }),

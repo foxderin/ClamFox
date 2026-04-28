@@ -17,18 +17,28 @@ void main() {
       expect(finding, isNull);
     });
 
-    test('parses command script warnings with details', () {
+    test('parses unknown command script warnings with details', () {
       final finding = RkhunterOutputParser.parseWarningLine(
-        "Warning: The command '/usr/bin/egrep' has been replaced by a script: /usr/bin/egrep: POSIX shell script, ASCII text executable",
+        "Warning: The command '/usr/bin/custom-tool' has been replaced by a script: /usr/bin/custom-tool: POSIX shell script, ASCII text executable",
       );
 
       expect(finding, isNotNull);
       expect(
         finding!.threatName,
-        "The command '/usr/bin/egrep' has been replaced by a script",
+        "The command '/usr/bin/custom-tool' has been replaced by a script",
       );
-      expect(finding.filePath, '/usr/bin/egrep');
+      expect(finding.filePath, '/usr/bin/custom-tool');
       expect(finding.details, 'POSIX shell script, ASCII text executable');
+    });
+
+    test('ignores known distro command script wrappers', () {
+      for (final line in const [
+        "Warning: The command '/usr/bin/egrep' has been replaced by a script: /usr/bin/egrep: POSIX shell script, ASCII text executable",
+        "Warning: The command '/usr/bin/fgrep' has been replaced by a script: /usr/bin/fgrep: POSIX shell script, ASCII text executable",
+        "Warning: The command '/usr/bin/ldd' has been replaced by a script: /usr/bin/ldd: Bourne-Again shell script, ASCII text executable",
+      ]) {
+        expect(RkhunterOutputParser.parseWarningLine(line), isNull);
+      }
     });
 
     test('parses hidden files with file type details', () {
@@ -70,20 +80,30 @@ void main() {
     test('repairs legacy copied command warnings', () {
       final finding = RkhunterOutputParser.parseLegacyFinding(
         threatName:
-            "The command '/usr/bin/ldd' has been replaced by a script: /usr/bin/ldd",
+            "The command '/usr/bin/custom-tool' has been replaced by a script: /usr/bin/custom-tool",
         filePath: 'Bourne-Again shell script, ASCII text executable',
       );
 
       expect(finding, isNotNull);
       expect(
         finding!.threatName,
-        "The command '/usr/bin/ldd' has been replaced by a script",
+        "The command '/usr/bin/custom-tool' has been replaced by a script",
       );
-      expect(finding.filePath, '/usr/bin/ldd');
+      expect(finding.filePath, '/usr/bin/custom-tool');
       expect(
         finding.details,
         'Bourne-Again shell script, ASCII text executable',
       );
+    });
+
+    test('drops legacy known distro command script wrappers', () {
+      final finding = RkhunterOutputParser.parseLegacyFinding(
+        threatName:
+            "The command '/usr/bin/ldd' has been replaced by a script: /usr/bin/ldd",
+        filePath: 'Bourne-Again shell script, ASCII text executable',
+      );
+
+      expect(finding, isNull);
     });
 
     test('drops legacy non-finding warnings', () {

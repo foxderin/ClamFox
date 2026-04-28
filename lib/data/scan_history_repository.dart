@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/scan_result.dart';
 import '../models/scan_session.dart';
+import 'engines/chkrootkit_output_parser.dart';
 import 'engines/rkhunter_output_parser.dart';
 
 /// Persists scan history across app restarts.
@@ -60,14 +61,19 @@ class ScanHistoryRepository {
   }
 
   ScanSession _normalizeLegacySession(ScanSession session) {
-    if (session.engine != 'rkhunter' || session.results.isEmpty) {
+    if ((session.engine != 'rkhunter' && session.engine != 'chkrootkit') ||
+        session.results.isEmpty) {
       return session;
     }
 
     var changed = false;
     final results = <ScanResult>[];
     for (final result in session.results) {
-      final repaired = _repairLegacyRkhunterResult(result);
+      final repaired = switch (session.engine) {
+        'rkhunter' => _repairLegacyRkhunterResult(result),
+        'chkrootkit' => _repairLegacyChkrootkitResult(result),
+        _ => result,
+      };
       if (repaired == null) {
         changed = true;
         continue;
@@ -93,15 +99,47 @@ class ScanHistoryRepository {
 
   ScanResult? _repairLegacyRkhunterResult(ScanResult result) {
     if (result.engine != 'rkhunter') return result;
-    if (result.details != null && result.details!.isNotEmpty) return result;
+    final commandScript =
+        result.threatName.startsWith("The command '") &&
+        result.threatName.contains(' has been replaced by a script');
+    if (!commandScript &&
+        result.details != null &&
+        result.details!.isNotEmpty) {
+      return result;
+    }
 
     final shouldRepair =
+        commandScript ||
         result.filePath == '(系统级检查)' ||
         !result.filePath.startsWith('/') ||
         result.threatName.contains(': /');
     if (!shouldRepair) return result;
 
     final finding = RkhunterOutputParser.parseLegacyFinding(
+      threatName: result.threatName,
+      filePath: result.filePath,
+    );
+    if (finding == null) return null;
+
+    final details = finding.details ?? result.details;
+    if (finding.threatName == result.threatName &&
+        finding.filePath == result.filePath &&
+        details == result.details) {
+      return result;
+    }
+
+    return result.copyWith(
+      threatName: finding.threatName,
+      filePath: finding.filePath,
+      details: details,
+    );
+  }
+
+  ScanResult? _repairLegacyChkrootkitResult(ScanResult result) {
+    if (result.engine != 'chkrootkit') return result;
+    if (result.details != null && result.details!.isNotEmpty) return result;
+
+    final finding = ChkrootkitOutputParser.parseLegacyFinding(
       threatName: result.threatName,
       filePath: result.filePath,
     );

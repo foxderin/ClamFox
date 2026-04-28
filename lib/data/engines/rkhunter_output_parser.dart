@@ -25,6 +25,14 @@ class RkhunterOutputParser {
     r'^(Suspicious file types found in)\s+([^:]+)(?::\s*(.*))?$',
   );
   static final RegExp _absolutePath = RegExp(r'/[^\s:]+');
+  static const Set<String> _knownDistroScriptWrappers = {
+    '/bin/egrep',
+    '/usr/bin/egrep',
+    '/bin/fgrep',
+    '/usr/bin/fgrep',
+    '/bin/ldd',
+    '/usr/bin/ldd',
+  };
 
   static RkhunterFinding? parseWarningLine(String line) {
     final match = _warningLine.firstMatch(line.trim());
@@ -40,6 +48,13 @@ class RkhunterOutputParser {
         commandMatch.group(2)!,
         fallbackPath: command,
       );
+      if (_isKnownDistroScriptWrapper(
+        command: command,
+        parsedPath: parsed.filePath,
+        details: parsed.details,
+      )) {
+        return null;
+      }
       return RkhunterFinding(
         threatName: "The command '$command' has been replaced by a script",
         filePath: parsed.filePath,
@@ -138,4 +153,16 @@ class RkhunterOutputParser {
   }
 
   static bool _looksLikePath(String value) => value.startsWith('/');
+
+  static bool _isKnownDistroScriptWrapper({
+    required String command,
+    required String parsedPath,
+    required String? details,
+  }) {
+    if (!_knownDistroScriptWrappers.contains(command)) return false;
+    if (parsedPath != command) return false;
+    if (details == null || details.isEmpty) return true;
+    final lower = details.toLowerCase();
+    return lower.contains('shell script');
+  }
 }

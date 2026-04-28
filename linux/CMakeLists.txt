@@ -157,6 +157,7 @@ add_custom_command(
           -t bin/clamfox_helper.dart
           -o "${CLAMFOX_HELPER_BUILD_DIR}"
   DEPENDS "${CLAMFOX_PROJECT_ROOT}/bin/clamfox_helper.dart"
+          "${CLAMFOX_PROJECT_ROOT}/lib/data/engines/chkrootkit_output_parser.dart"
           "${CLAMFOX_PROJECT_ROOT}/lib/data/engines/engine_commands.dart"
           "${CLAMFOX_PROJECT_ROOT}/lib/data/engines/rkhunter_output_parser.dart"
           "${CLAMFOX_PROJECT_ROOT}/lib/data/clamav/clamscan_output_parser.dart"
