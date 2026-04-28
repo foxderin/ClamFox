@@ -1,0 +1,64 @@
+name: clamfox
+description: "ClamFox - A modern ClamAV GUI for Linux"
+publish_to: "none"
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.8.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # UI and Material Design
+  cupertino_icons: ^1.0.8
+
+  # File management and system interaction
+  file_picker: ^6.1.1
+  path_provider: ^2.1.1
+  path: ^1.8.3
+
+  # State management
+  provider: ^6.1.1
+
+  # UI enhancements
+  flutter_animate: ^4.3.0
+  lottie: ^2.7.0
+
+  # Networking for updates
+  http: ^1.1.0
+
+  # Local storage
+  shared_preferences: ^2.2.2
+
+  # Icons
+  flutter_svg: ^2.0.9
+  icons_launcher: ^2.1.4
+
+  # DBus for Polkit integration
+  dbus: ^0.7.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  # The "flutter_lints" package below contains a set of recommended lints to
+  # encourage good coding practices. The lint set provided by the package is
+  # activated in the `analysis_options.yaml` file located at the root of your
+  # package. See that file for information about deactivating specific lint
+  # rules and activating additional ones.
+  flutter_lints: ^5.0.0
+
+# For information on the generic Dart part of this file, see the
+# following page: https://dart.dev/tools/pub/pubspec
+
+# The following section is specific to Flutter packages.
+flutter:
+  uses-material-design: true
+
+  # Assets
+  assets:
+    - assets/images/
+    - assets/icons/
+    - assets/animations/

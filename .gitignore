@@ -1,0 +1,104 @@
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# Editor and IDE files
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+*.swp
+*.swo
+*~
+
+# Local automation and agent state
+.codex
+.omc/
+.spec-workflow/
+
+# Logs, coverage, and temporary files
+*.class
+*.log
+*.pyc
+*.tmp
+*.temp
+__pycache__/
+.atom/
+.history/
+.svn/
+coverage/
+lcov.info
+migrate_working_dir/
+
+# Dart and Flutter
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+pubspec_overrides.yaml
+**/doc/api/
+**/ios/Flutter/.last_build_id
+/build/
+
+# Generated Flutter desktop intermediates
+/linux/flutter/ephemeral/
+/windows/flutter/ephemeral/
+/macos/Flutter/ephemeral/
+/ios/Flutter/ephemeral/
+/ios/Flutter/Generated.xcconfig
+/ios/Flutter/flutter_export_environment.sh
+/macos/Flutter/Flutter-Generated.xcconfig
+/macos/Flutter/flutter_export_environment.sh
+
+# Flutter release debug metadata
+app.*.symbols
+app.*.map.json
+
+# Android and Gradle
+/android/.gradle/
+/android/local.properties
+/android/app/.cxx/
+/android/app/build/
+/android/app/debug/
+/android/app/profile/
+/android/app/release/
+*.apk
+*.aab
+*.ap_
+*.jks
+*.keystore
+key.properties
+
+# Apple platforms
+/ios/Pods/
+/ios/.symlinks/
+/macos/Pods/
+/macos/.symlinks/
+DerivedData/
+xcuserdata/
+*.xcuserstate
+*.xcscmblueprint
+
+# Native build systems
+.build/
+.buildlog/
+.externalNativeBuild/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+compile_commands.json
+
+# Linux packaging/build outputs
+*.AppImage
+*.deb
+*.rpm
+*.snap
+
+# Windows build outputs
+*.dll
+*.exe
+*.pdb
+*.ilk
