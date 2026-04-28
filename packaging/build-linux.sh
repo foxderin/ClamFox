@@ -239,6 +239,10 @@ fi
 export PATH="${GTK_PLUGIN_DIR}:${PATH}"
 # Force AppImage tools to extract instead of relying on FUSE in CI.
 export APPIMAGE_EXTRACT_AND_RUN=1
+# Flutter Linux ships against GTK 3. The plugin's auto-detect inspects
+# the binary passed via --executable; we use --library instead, so tell
+# the plugin which version to deploy explicitly.
+export DEPLOY_GTK_VERSION=3
 
 (
   cd "${DIST}"
